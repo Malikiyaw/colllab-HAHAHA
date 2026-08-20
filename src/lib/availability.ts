@@ -37,8 +37,8 @@ export async function getAvailableSlots(
   const [dentist, service, clinicSchedule, holiday, blockedTimes, dentistSchedule, existingAppointments] = await Promise.all([
     prisma.dentist.findUnique({ where: { id: dentistId } }),
     prisma.service.findUnique({ where: { id: serviceId } }),
-    prisma.clinicSchedule.findUnique({ where: { dayOfWeek } }),
-    prisma.holiday.findUnique({ where: { date: startOfDay(date) } }),
+    prisma.clinicSchedule.findFirst({ where: { dayOfWeek } }),
+    prisma.holiday.findFirst({ where: { date: startOfDay(date) } }),
     prisma.blockedTime.findMany({
       where: {
         OR: [{ dentistId }, { clinicWide: true }],
@@ -46,7 +46,7 @@ export async function getAvailableSlots(
         endTime: { gt: startOfDay(date) },
       },
     }),
-    prisma.dentistSchedule.findUnique({ where: { dentistId_dayOfWeek: { dentistId, dayOfWeek } } }),
+    prisma.dentistSchedule.findFirst({ where: { dentistId, dayOfWeek } }),
     prisma.appointment.findMany({
       where: {
         dentistId,

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { headers } from "next/headers"
+import { Prisma } from "@/generated/prisma"
 
 interface AuditLogInput {
   userId?: string
@@ -21,7 +22,7 @@ export async function createAuditLog(input: AuditLogInput): Promise<void> {
         action: input.action,
         entity: input.entity,
         entityId: input.entityId,
-        metadata: input.metadata,
+        metadata: input.metadata as Prisma.InputJsonValue,
         ipAddress,
         userAgent,
       },

@@ -4,6 +4,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   AUTH_SECRET: z.string().min(32),
   AUTH_URL: z.string().url(),
+  NEXTAUTH_URL: z.string().url().default("http://localhost:3000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().default(1025),

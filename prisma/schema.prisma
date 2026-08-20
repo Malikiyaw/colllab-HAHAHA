@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -93,6 +92,7 @@ model Dentist {
   schedules    DentistSchedule[]
   blockedTimes BlockedTime[]
   appointments Appointment[]
+  waitlist     Waitlist[]
 }
 
 model Staff {
@@ -134,6 +134,7 @@ model Service {
   category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   dentists    DentistService[]
   appointments Appointment[]
+  waitlist      Waitlist[]
 }
 
 model DentistService {
