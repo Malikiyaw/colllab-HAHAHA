@@ -158,6 +158,8 @@ model DentistSchedule {
   active    Boolean @default(true)
 
   dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+
+  @@unique([dentistId, dayOfWeek])
 }
 
 model ClinicSchedule {
