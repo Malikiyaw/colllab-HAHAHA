@@ -1,9 +1,11 @@
 import { z } from "zod"
 
+const isBuildTime = process.env.NEXT_PHASE === "phase-production-build"
+
 const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  AUTH_SECRET: z.string().min(32),
-  AUTH_URL: z.string().url(),
+  DATABASE_URL: isBuildTime ? z.string().url().optional() : z.string().url(),
+  AUTH_SECRET: isBuildTime ? z.string().min(32).optional() : z.string().min(32),
+  AUTH_URL: isBuildTime ? z.string().url().optional() : z.string().url(),
   NEXTAUTH_URL: z.string().url().default("http://localhost:3000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   SMTP_HOST: z.string().default("localhost"),
