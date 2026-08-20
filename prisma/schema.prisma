@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  RECEPTIONIST
+  DENTIST
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  phone         String?
+  passwordHash  String?
+  name          String
+  role          Role      @default(PATIENT)
+  emailVerified DateTime?
+  image         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  patient       Patient?
+  dentist       Dentist?
+  staff         Staff?
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  sessions      Session[]
+  accounts      Account[]
+}
+
+model Patient {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  dateOfBirth           DateTime?
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  medicalNotes          String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+  waitlist      Waitlist[]
+}
+
+model Dentist {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  specialization String?
+  licenseNumber  String?
+  bio            String?
+  active         Boolean   @default(true)
+  color          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services     DentistService[]
+  schedules    DentistSchedule[]
+  blockedTimes BlockedTime[]
+  appointments Appointment[]
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  position  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  services Service[]
+}
+
+model Service {
+  id                   String    @id @default(cuid())
+  categoryId           String?
+  name                 String
+  description          String?
+  durationMinutes      Int
+  price                Decimal?  @db.Decimal(10, 2)
+  bufferBeforeMinutes  Int       @default(0)
+  bufferAfterMinutes   Int       @default(0)
+  active               Boolean   @default(true)
+  color                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  dentists    DentistService[]
+  appointments Appointment[]
+}
+
+model DentistService {
+  dentistId     String
+  serviceId     String
+  priceOverride Decimal? @db.Decimal(10, 2)
+  active        Boolean  @default(true)
+
+  dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([dentistId, serviceId])
+}
+
+model DentistSchedule {
+  id        String  @id @default(cuid())
+  dentistId String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  active    Boolean @default(true)
+
+  dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+}
+
+model ClinicSchedule {
+  id        String  @id @default(cuid())
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  active    Boolean @default(true)
+}
+
+model Holiday {
+  id      String   @id @default(cuid())
+  date    DateTime
+  name    String?
+  allDay  Boolean  @default(true)
+}
+
+model BlockedTime {
+  id         String   @id @default(cuid())
+  dentistId  String?
+  clinicWide Boolean  @default(false)
+  startTime  DateTime
+  endTime    DateTime
+  reason     String?
+
+  dentist Dentist? @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+
+  @@index([dentistId, startTime, endTime])
+}
+
+model Appointment {
+  id                  String             @id @default(cuid())
+  patientId           String
+  dentistId           String
+  serviceId           String
+  startTime           DateTime
+  endTime             DateTime
+  status              AppointmentStatus  @default(PENDING)
+  notes               String?
+  cancellationReason  String?
+  cancelledById       String?
+  cancelledAt         DateTime?
+  rescheduledFromId   String?            @unique
+  rescheduledToId     String?            @unique
+  idempotencyKey      String             @unique
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  patient       Patient                    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist       Dentist                    @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  service       Service                    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  statusHistory AppointmentStatusHistory[]
+
+  @@index([dentistId, startTime, endTime])
+  @@index([patientId, startTime])
+  @@index([status, startTime])
+}
+
+model AppointmentStatusHistory {
+  id            String             @id @default(cuid())
+  appointmentId String
+  fromStatus    AppointmentStatus?
+  toStatus       AppointmentStatus
+  changedById   String?
+  note          String?
+  createdAt     DateTime           @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+}
+
+model Waitlist {
+  id            String    @id @default(cuid())
+  patientId     String
+  serviceId     String
+  dentistId     String?
+  preferredDate DateTime?
+  status        String    @default("WAITING")
+  createdAt     DateTime  @default(now())
+
+  patient Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  service Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  dentist Dentist? @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id           String              @id @default(cuid())
+  userId       String
+  type         NotificationType
+  subject      String?
+  body         String
+  status       NotificationStatus  @default(PENDING)
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Setting {
+  key         String   @id
+  value       Json
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

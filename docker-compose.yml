@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dental-clinic-postgres
+    environment:
+      POSTGRES_USER: dental_clinic
+      POSTGRES_PASSWORD: dental_clinic_dev
+      POSTGRES_DB: dental_clinic
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dental_clinic -d dental_clinic"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
