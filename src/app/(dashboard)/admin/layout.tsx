@@ -4,7 +4,7 @@ import { ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, Calendar, Clock, Shield, Settings, LogOut, Building2, UserCog } from "lucide-react"
+import { LayoutDashboard, Users, Calendar, Clock, Shield, Settings, LogOut, Building2, UserCog, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -20,6 +20,7 @@ const navigation = [
   { name: "Schedules", href: "/dashboard/admin/schedules", icon: Clock },
   { name: "Blocked Time", href: "/dashboard/admin/blocked-times", icon: Shield },
   { name: "Staff", href: "/dashboard/admin/staff", icon: Users },
+  { name: "Jobs", href: "/dashboard/admin/jobs", icon: Bell },
   { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: Shield },
   { name: "Settings", href: "/dashboard/admin/settings", icon: Settings },
 ]
